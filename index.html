@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="bg-gray-100 text-gray-800 min-h-screen flex items-center justify-center p-4 md:p-6">
+
+    <div class="w-full max-w-5xl bg-white p-6 md:p-8 rounded-lg shadow-lg">
+        <div class="flex justify-between items-center mb-6 border-b pb-3">
+            <h2 class="text-2xl font-semibold">TAX INVOICE</h2>
+            <div class="text-sm text-gray-500">
+                <span id="invoiceNumber">FB-<span id="invNum">001</span></span>
+            </div>
+        </div>
+
+        <form id="invoiceForm" method="POST" action="https://favourez.com/ab/invoice_pdf.php">
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Bill To: <span class="text-red-500">*</span></label>
+                    <textarea name="bill_to" rows="4" required
+                        class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Client name, address, TRN, etc."></textarea>
+                </div>
+                <div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Invoice Date: <span
+                                class="text-red-500">*</span></label>
+                        <input type="date" name="invoice_date" id="invoice_date" required
+                            class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Due Date: <span
+                                class="text-red-500">*</span></label>
+                        <input type="date" name="due_date" id="due_date" required
+                            class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <h3 class="text-lg font-medium mb-3">Items</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full border border-gray-200 text-sm">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="p-2 border">#</th>
+                                <th class="p-2 border">Description <span class="text-red-500">*</span></th>
+                                <th class="p-2 border">Qty <span class="text-red-500">*</span></th>
+                                <th class="p-2 border">Unit</th>
+                                <th class="p-2 border">Rate (AED) <span class="text-red-500">*</span></th>
+                                <th class="p-2 border">Amount (AED)</th>
+                                <th class="p-2 border">VAT (5%)</th>
+                                <th class="p-2 border"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoiceTable">
+                            <tr class="border-t">
+                                <td class="p-2 border text-center">1</td>
+                                <td class="p-2 border"><input type="text" name="desc[]" required
+                                        class="w-full p-1 border rounded" placeholder="Item description"></td>
+                                <td class="p-2 border"><input type="number" name="qty[]" min="0" step="0.01" required
+                                        class="qty w-full p-1 border rounded" value="1"></td>
+                                <td class="p-2 border">
+                                    <select name="unit[]" class="w-full p-1 border rounded">
+                                        <option value="" selected disabled>Select unit</option>
+                                        <option value="kg">kg</option>
+                                        <option value="box">box</option>
+                                        <option value="piece">piece</option>
+                                        <option value="pack">pack</option>
+                                        <option value="carton">carton</option>
+                                    </select>
+                                </td>
+
+                                <td class="p-2 border"><input type="number" name="rate[]" min="0" step="0.01" required
+                                        class="rate w-full p-1 border rounded" value="0.00"></td>
+                                <td class="p-2 border amount text-right">0.00</td>
+                                <td class="p-2 border vat text-right">0.00</td>
+                                <td class="p-2 border text-center">
+                                    <button type="button" onclick="removeRow(this)"
+                                        class="text-red-500 hover:text-red-700">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="button" onclick="addRow()"
+                    class="text-blue-600 hover:text-blue-800 text-sm flex items-center">
+                    <i class="fas fa-plus-circle mr-1"></i> Add Item
+                </button>
+            </div>
+
+            <div class="mt-8 text-right space-y-2">
+                <div><span class="font-semibold">Sub Total (AED):</span> <span id="subTotal">0.00</span></div>
+                <div><span class="font-semibold">VAT 5% (AED):</span> <span id="vatTotal">0.00</span></div>
+                <div class="text-lg font-bold border-t pt-2"><span>Total (AED):</span> <span id="grandTotal">0.00</span>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+                <div class="text-sm text-gray-500">
+                    <p>Note: Items marked with <span class="text-red-500">*</span> are required</p>
+                </div>
+                <div>
+                    <button type="button" onclick="resetForm()"
+                        class="mr-4 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md transition">
+                        Reset
+                    </button>
+                    <button type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition">
+                        <i class="fas fa-file-pdf mr-2"></i>Generate PDF
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let invoiceCounter = localStorage.getItem('https://favourez.com/ab/invoiceCounter') || 1;
+        document.getElementById('invNum').textContent = String(invoiceCounter).padStart(3, '0');
+
+        function updateTotals() {
+            let rows = document.querySelectorAll("#invoiceTable tr");
+            let subTotal = 0, vatTotal = 0;
+
+            rows.forEach((row, index) => {
+                // Update row number
+                row.cells[0].textContent = index + 1;
+
+                let qty = parseFloat(row.querySelector(".qty").value) || 0;
+                let rate = parseFloat(row.querySelector(".rate").value) || 0;
+                let amount = qty * rate;
+                let vat = amount * 0.05;
+
+                row.querySelector(".amount").textContent = amount.toFixed(2);
+                row.querySelector(".vat").textContent = vat.toFixed(2);
+
+                subTotal += amount;
+                vatTotal += vat;
+            });
+
+            document.getElementById("subTotal").textContent = subTotal.toFixed(2);
+            document.getElementById("vatTotal").textContent = vatTotal.toFixed(2);
+            document.getElementById("grandTotal").textContent = (subTotal + vatTotal).toFixed(2);
+        }
+
+        function addRow() {
+            let table = document.querySelector("#invoiceTable");
+            let index = table.rows.length + 1;
+
+            let row = document.createElement("tr");
+            row.className = "border-t";
+            row.innerHTML = `
+        <td class="p-2 border text-center">${index}</td>
+        <td class="p-2 border"><input type="text" name="desc[]" required class="w-full p-1 border rounded" placeholder="Item description"></td>
+        <td class="p-2 border"><input type="number" name="qty[]" min="0" step="0.01" required class="qty w-full p-1 border rounded" value="1"></td>
+        <td class="p-2 border">
+          <select name="unit[]" class="w-full p-1 border rounded">
+          <option value="" selected disabled>Select unit</option>
+            <option value="kg">kg</option>
+            <option value="box">box</option>
+            <option value="piece">piece</option>
+            <option value="pack">pack</option>
+            <option value="carton">carton</option>
+          </select>
+        </td>
+        <td class="p-2 border"><input type="number" name="rate[]" min="0" step="0.01" required class="rate w-full p-1 border rounded" value="0.00"></td>
+        <td class="p-2 border amount text-right">0.00</td>
+        <td class="p-2 border vat text-right">0.00</td>
+        <td class="p-2 border text-center">
+          <button type="button" onclick="removeRow(this)" class="text-red-500 hover:text-red-700">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      `;
+            table.appendChild(row);
+            bindInputs(row);
+        }
+
+        function removeRow(button) {
+            const row = button.closest('tr');
+            if (document.querySelectorAll("#invoiceTable tr").length > 1) {
+                row.remove();
+                updateTotals();
+            } else {
+                alert("You need at least one item in the invoice");
+            }
+        }
+
+        function bindInputs(row) {
+            row.querySelector(".qty").addEventListener("input", updateTotals);
+            row.querySelector(".rate").addEventListener("input", updateTotals);
+        }
+
+        document.querySelectorAll(".qty, .rate").forEach(input => {
+            input.addEventListener("input", updateTotals);
+        });
+
+        function setDates() {
+            const now = new Date();
+            const due = new Date();
+            due.setDate(now.getDate() + 60); 
+
+            document.getElementById("invoice_date").valueAsDate = now;
+            document.getElementById("due_date").valueAsDate = due;
+        }
+
+        function resetForm() {
+            if (confirm("Are you sure you want to reset the form?")) {
+                document.getElementById("invoiceForm").reset();
+                const table = document.getElementById("invoiceTable");
+                while (table.rows.length > 1) {
+                    table.deleteRow(1);
+                }
+                setDates();
+                updateTotals();
+
+                invoiceCounter++;
+                localStorage.setItem('invoiceCounter', invoiceCounter);
+                document.getElementById('invNum').textContent = String(invoiceCounter).padStart(3, '0');
+            }
+        }
+
+        setDates();
+        updateTotals();
+
+        document.getElementById("invoiceForm").addEventListener('submit', function (event) {
+            if (!this.checkValidity()) {
+                event.preventDefault();
+                alert("Please fill in all required fields correctly.");
+            }
+        });
+    </script>
+</body>
+
+</html>
