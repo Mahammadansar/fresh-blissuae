@@ -13,43 +13,12 @@
     <div class="w-full max-w-5xl bg-white p-6 md:p-8 rounded-lg shadow-lg">
         <div class="flex justify-between items-center mb-6 border-b pb-3">
             <h2 class="text-2xl font-semibold">TAX INVOICE</h2>
-            <div class="text-sm text-gray-500 flex items-center">
-                <span id="invoiceNumber">Loading...</span>
-                <button type="button" onclick="showInvoiceNumberModal()" class="ml-2 text-blue-500 hover:text-blue-700">
-                    <i class="fas fa-edit"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Invoice Number Modal -->
-        <div id="invoiceNumberModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-            <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-                <h3 class="text-lg font-semibold mb-4">Change Invoice Number</h3>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-1">Prefix:</label>
-                    <input type="text" id="prefixInput" class="w-full border border-gray-300 rounded p-2" value="FB">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-1">Year:</label>
-                    <input type="text" id="yearInput" class="w-full border border-gray-300 rounded p-2" value="<?= date('Y') ?>">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-1">Sequence Number:</label>
-                    <input type="number" id="sequenceInput" class="w-full border border-gray-300 rounded p-2" min="1">
-                </div>
-                <div class="flex justify-end space-x-2">
-                    <button type="button" onclick="hideInvoiceNumberModal()" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded">
-                        Cancel
-                    </button>
-                    <button type="button" onclick="updateInvoiceNumber()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                        Save
-                    </button>
-                </div>
+            <div class="text-sm text-gray-500">
+                <span id="invoiceNumber">FB-<span id="invNum">001</span></span>
             </div>
         </div>
 
         <form id="invoiceForm" method="POST" action="invoice_pdf.php">
-            <input type="hidden" id="invoice_number" name="invoice_number" value="">
             <div class="grid md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-medium mb-1">Bill To: <span class="text-red-500">*</span></label>
@@ -156,104 +125,9 @@
         </form>
     </div>
 
-
     <script>
-        // Fetch the invoice number from backend when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            fetchInvoiceNumber();
-        });
-
-        function fetchInvoiceNumber() {
-            fetch('get_invoice_number.php')
-                .then(response => response.json())
-                .then(data => {
-                    if(data.success) {
-                        document.getElementById('invoiceNumber').textContent = data.invoiceNumber;
-                        document.getElementById('invoice_number').value = data.invoiceNumber;
-                        
-                        // Parse the number for the edit modal
-                        const parts = data.invoiceNumber.split('-');
-                        if(parts.length === 3) {
-                            document.getElementById('prefixInput').value = parts[0];
-                            document.getElementById('yearInput').value = 2024;
-                            document.getElementById('sequenceInput').value = parseInt(parts[2]);
-                        }
-                    } else {
-                        document.getElementById('invoiceNumber').textContent = 'FB-<?= date("Y") ?>-0001';
-                        document.getElementById('invoice_number').value = 'FB-<?= date("Y") ?>-0001';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching invoice number:', error);
-                    document.getElementById('invoiceNumber').textContent = 'FB-<?= date("Y") ?>-0001';
-                    document.getElementById('invoice_number').value = 'FB-<?= date("Y") ?>-0001';
-                });
-        }
-
-        function showInvoiceNumberModal() {
-            const currentNumber = document.getElementById('invoiceNumber').textContent;
-            const parts = currentNumber.split('-');
-            
-            if(parts.length === 3) {
-                document.getElementById('prefixInput').value = parts[0];
-                document.getElementById('yearInput').value = 2024;
-                document.getElementById('sequenceInput').value = parseInt(parts[2]);
-            }
-            
-            document.getElementById('invoiceNumberModal').classList.remove('hidden');
-        }
-
-        function hideInvoiceNumberModal() {
-            document.getElementById('invoiceNumberModal').classList.add('hidden');
-        }
-
-        function updateInvoiceNumber() {
-            const prefix = document.getElementById('prefixInput').value.trim();
-            const year = document.getElementById('yearInput').value.trim();
-            const sequence = document.getElementById('sequenceInput').value;
-            
-            if (!prefix || !year || !sequence) {
-                alert('Please fill all fields');
-                return;
-            }
-            
-            if(year.length !== 4 || isNaN(year)) {
-                alert('Please enter a valid 4-digit year');
-                return;
-            }
-            
-            const newInvoiceNumber = `${prefix}-${year}-${String(sequence).padStart(4, '0')}`;
-            
-            document.getElementById('invoiceNumber').textContent = newInvoiceNumber;
-            document.getElementById('invoice_number').value = newInvoiceNumber;
-            
-            hideInvoiceNumberModal();
-            
-            // Optionally send to backend to update counter
-            updateInvoiceNumberOnBackend(newInvoiceNumber);
-        }
-
-        function updateInvoiceNumberOnBackend(newNumber) {
-            const formData = new FormData();
-            formData.append('invoice_number', newNumber);
-            
-            fetch('update_invoice_number.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(!data.success) {
-                    console.error('Failed to update invoice number on backend');
-                }
-            })
-            .catch(error => {
-                console.error('Error updating invoice number:', error);
-            });
-        }
-
-    </script>
-    <script>
+        let invoiceCounter = localStorage.getItem('invoiceCounter') || 1;
+        document.getElementById('invNum').textContent = String(invoiceCounter).padStart(3, '0');
 
         function updateTotals() {
             let rows = document.querySelectorAll("#invoiceTable tr");
