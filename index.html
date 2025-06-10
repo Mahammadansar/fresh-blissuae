@@ -164,7 +164,7 @@
         });
 
         function fetchInvoiceNumber() {
-            fetch('get_invoice_number.php')
+            fetch('https://favourez.com/ab/get_invoice_number.php')
                 .then(response => response.json())
                 .then(data => {
                     if(data.success) {
@@ -237,7 +237,7 @@
             const formData = new FormData();
             formData.append('invoice_number', newNumber);
             
-            fetch('update_invoice_number.php', {
+            fetch('https://favourez.com/ab/update_invoice_number.php', {
                 method: 'POST',
                 body: formData
             })
